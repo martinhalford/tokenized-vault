@@ -1,0 +1,11 @@
+cache/
+out/
+
+# Ignore MacOS files
+.DS_Store
+.env
+
+# Ignore VScode files
+/.vscode/
+
+deploy.txt
