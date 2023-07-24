@@ -13,7 +13,15 @@ import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
  * have been invested externally.
  */
 contract ExternalAsset is ERC20, ERC20Burnable, Ownable {
-    constructor() ERC20("External Asset", "EXT") {}
+    uint8 private _decimals;
+
+    constructor(uint8 decimals_) ERC20("External Asset", "EXT") {
+        _decimals = decimals_;
+    }
+
+    function decimals() public view virtual override returns (uint8) {
+        return _decimals;
+    }
 
     function mint(address to, uint256 amount) public onlyOwner {
         _mint(to, amount);
@@ -35,6 +43,7 @@ contract TokenizedVault is ERC4626, Ownable {
     string private _name;
     string private _symbol;
     ExternalAsset private _externalAsset;
+    uint8 private _decimals;
 
     /**
      * @dev Sets the values for {name} and {symbol}, initializes the underlying
@@ -47,7 +56,8 @@ contract TokenizedVault is ERC4626, Ownable {
     ) ERC4626(asset_) ERC20(name_, symbol_) Ownable() {
         _name = name_;
         _symbol = symbol_;
-        _externalAsset = new ExternalAsset();
+        _decimals = asset_.decimals();
+        _externalAsset = new ExternalAsset(_decimals);
         // Transfer ownership of _externalAsset to this contract
         // - so only this contract can mint/burn external assets.
         _externalAsset.transferOwnership(address(this));
@@ -94,7 +104,7 @@ contract TokenizedVault is ERC4626, Ownable {
      * {IERC20-balanceOf} and {IERC20-transfer}.
      */
     function decimals() public view virtual override(ERC4626) returns (uint8) {
-        return 18;
+        return _decimals;
     }
 
     /**
