@@ -56,10 +56,8 @@ contract TokenizedVault is ERC4626, Ownable {
     ) ERC4626(asset_) ERC20(name_, symbol_) Ownable() {
         _name = name_;
         _symbol = symbol_;
-        _decimals = asset_.decimals();
+        _decimals = ERC20(address(asset_)).decimals();
         _externalAsset = new ExternalAsset(_decimals);
-        // Transfer ownership of _externalAsset to this contract
-        // - so only this contract can mint/burn external assets.
         _externalAsset.transferOwnership(address(this));
     }
 
