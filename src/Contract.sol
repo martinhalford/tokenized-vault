@@ -6,6 +6,8 @@ import "@openzeppelin/contracts/token/ERC20/extensions/ERC4626.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
+import "@openzeppelin/contracts/security/Pausable.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 /**
  * @title ExternalAsset
@@ -39,11 +41,13 @@ contract ExternalAsset is ERC20, ERC20Burnable, Ownable {
  * @title TokenizedVault
  * @dev This contract is a concrete implementation of ERC4626.
  */
-contract TokenizedVault is ERC4626, Ownable {
+contract TokenizedVault is ERC4626, Ownable, Pausable, ReentrancyGuard {
     string private _name;
     string private _symbol;
     ExternalAsset private _externalAsset;
     uint8 private _decimals;
+    uint256 public minDepositSize;
+    uint256 public maxDepositSize;
 
     /**
      * @dev Sets the values for {name} and {symbol}, initializes the underlying
@@ -52,13 +56,17 @@ contract TokenizedVault is ERC4626, Ownable {
     constructor(
         IERC20 asset_,
         string memory name_,
-        string memory symbol_
+        string memory symbol_,
+        uint256 minDepositSize_,
+        uint256 maxDepositSize_
     ) ERC4626(asset_) ERC20(name_, symbol_) Ownable() {
         _name = name_;
         _symbol = symbol_;
         _decimals = ERC20(address(asset_)).decimals();
         _externalAsset = new ExternalAsset(_decimals);
         _externalAsset.transferOwnership(address(this));
+        minDepositSize = minDepositSize_;
+        maxDepositSize = maxDepositSize_;
     }
 
     /**
@@ -103,6 +111,28 @@ contract TokenizedVault is ERC4626, Ownable {
      */
     function decimals() public view virtual override(ERC4626) returns (uint8) {
         return _decimals;
+    }
+
+    /**
+     * @dev Mints tokens for the investor and transfers the underlying asset to this contract.
+     */
+    function deposit(uint256 amount) public {
+        // Check that the amount meets the minimum and maximum requirements.
+        require(amount > 0, "Deposit amount must be greater than zero");
+        require(
+            amount >= minDepositSize,
+            "Deposit amount is less than the minimum"
+        );
+        require(amount <= maxDepositSize, "Deposit amount exceeds the maximum");
+
+        // Transfer the tokens from the investor to this contract
+        require(
+            IERC20(asset()).transferFrom(msg.sender, address(this), amount),
+            "Transfer failed"
+        );
+
+        // Mint an equivalent amount of this contract's tokens for the investor
+        _mint(msg.sender, amount);
     }
 
     /**
@@ -232,5 +262,13 @@ contract TokenizedVault is ERC4626, Ownable {
 
         // Mint the external asset tokens
         _externalAsset.mint(investor, amount);
+    }
+
+    function pause() public onlyOwner {
+        _pause();
+    }
+
+    function unpause() public onlyOwner {
+        _unpause();
     }
 }
