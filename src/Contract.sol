@@ -114,28 +114,6 @@ contract TokenizedVault is ERC4626, Ownable, Pausable, ReentrancyGuard {
     }
 
     /**
-     * @dev Mints tokens for the investor and transfers the underlying asset to this contract.
-     */
-    function deposit(uint256 amount) public {
-        // Check that the amount meets the minimum and maximum requirements.
-        require(amount > 0, "Deposit amount must be greater than zero");
-        require(
-            amount >= minDepositSize,
-            "Deposit amount is less than the minimum"
-        );
-        require(amount <= maxDepositSize, "Deposit amount exceeds the maximum");
-
-        // Transfer the tokens from the investor to this contract
-        require(
-            IERC20(asset()).transferFrom(msg.sender, address(this), amount),
-            "Transfer failed"
-        );
-
-        // Mint an equivalent amount of this contract's tokens for the investor
-        _mint(msg.sender, amount);
-    }
-
-    /**
      * @dev Returns the total balance of assets and external assets of an account.
      */
     function totalAllAssets(address account) public view returns (uint256) {

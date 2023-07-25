@@ -27,7 +27,7 @@ contract TokenizedVaultTest is Test {
         _mockExternalContract = address(2);
 
         // Set up the _vault with the _asset, name, and symbol.
-        _vault = new TokenizedVault(_asset, "Vault", "VAULT");
+        _vault = new TokenizedVault(_asset, "Vault", "VAULT", 0, 1000000000000);
 
         // Set up the external _asset.
         // This is created in the constructor of the _vault.
